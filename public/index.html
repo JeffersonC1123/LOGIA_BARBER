@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barbería Pro - Sistema de Citas & Gestión</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+
+  <!-- HEADER & NAVIGATION BAR -->
+  <header class="header">
+    <div class="container navbar">
+      <a href="#" class="logo" onclick="App.renderHome(); return false;">
+        💈 Barbería <span>Pro</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#" onclick="App.renderHome(); return false;">Inicio</a></li>
+        <li><a href="#servicios" onclick="App.renderHome(); return false;">Servicios</a></li>
+        <li><a href="#barberos" onclick="App.renderHome(); return false;">Barberos</a></li>
+        <span id="role-nav-links"></span>
+      </ul>
+
+      <div class="nav-user" id="nav-user-container">
+        <!-- Generado dinámicamente por auth.js -->
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL DINÁMICO (SPA) -->
+  <main id="main-content" style="flex: 1;">
+    <!-- Cargas dinámicas de vistas -->
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 <strong>Barbería Pro</strong> - Sistema Profesional de Gestión de Citas y Cobros. Todos los derechos reservados.</p>
+      <p style="font-size: 0.8rem; margin-top: 0.4rem; color: var(--gold-primary);">
+        Diseñado con tecnologías de alto rendimiento: Node.js, Express, SQLite, HTML5 & CSS3.
+      </p>
+    </div>
+  </footer>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+  <div id="toast-container"></div>
+
+  <!-- SCRIPTS -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
