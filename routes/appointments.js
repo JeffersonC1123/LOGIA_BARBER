@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
+const { createAppointment } = require('../utils/appointmentBooking');
 const { 
   calculateEndTime, 
   doTimesOverlap, 
@@ -12,99 +13,7 @@ const {
 // POST /api/appointments - Crear nueva reserva (RF-004 y RF-005)
 router.post('/', authenticateToken, (req, res) => {
   try {
-    const { barber_id, service_id, date, start_time, notes, client_id } = req.body;
-
-    // Determinar el cliente: Si es cliente reserva para sí mismo; si es admin/personal puede reservar a nombre de un cliente
-    let targetClientId = req.user.id;
-    if (['admin', 'personal'].includes(req.user.role) && client_id) {
-      targetClientId = client_id;
-    }
-
-    if (!barber_id || !service_id || !date || !start_time) {
-      return res.status(400).json({ error: 'Barbero, servicio, fecha y hora de inicio son obligatorios.' });
-    }
-
-    // Usar transacción de SQLite para garantizar atomicidad y prevenir condiciones de carrera simultáneas (RF-005)
-    const createBookingTransaction = db.transaction(() => {
-      // 1. Validar servicio
-      const service = db.prepare('SELECT * FROM services WHERE id = ? AND is_active = 1').get(service_id);
-      if (!service) {
-        throw new Error('El servicio seleccionado no está disponible.');
-      }
-
-      // 2. Validar barbero
-      const barber = db.prepare(`
-        SELECT b.*, u.name 
-        FROM barbers b 
-        JOIN users u ON b.user_id = u.id 
-        WHERE b.id = ? AND b.is_active = 1
-      `).get(barber_id);
-
-      if (!barber) {
-        throw new Error('El barbero seleccionado no está disponible.');
-      }
-
-      // 3. Validar que la fecha/hora no esté en el pasado
-      if (isPastDateTime(date, start_time)) {
-        throw new Error('No es posible reservar citas en fechas u horas pasadas.');
-      }
-
-      // 4. Calcular hora de fin
-      const endTime = calculateEndTime(start_time, service.duration_minutes);
-
-      // 5. Validar jornada laboral del barbero
-      if (!isWithinWorkingHours(start_time, endTime, barber.start_hour, barber.end_hour)) {
-        throw new Error(`El horario seleccionado (${start_time} - ${endTime}) está fuera de la jornada laboral de ${barber.name} (${barber.start_hour} - ${barber.end_hour}).`);
-      }
-
-      // 6. Verificar si existe algún solapamiento de horarios (RF-005)
-      const existingAppointments = db.prepare(`
-        SELECT id, start_time, end_time 
-        FROM appointments 
-        WHERE barber_id = ? AND date = ? AND status != 'cancelada'
-      `).all(barber_id, date);
-
-      const hasOverlap = existingAppointments.some(app => 
-        doTimesOverlap(start_time, endTime, app.start_time, app.end_time)
-      );
-
-      if (hasOverlap) {
-        throw new Error(`El horario de ${start_time} a ${endTime} ya se encuentra reservado para ${barber.name}. Por favor selecciona otro horario.`);
-      }
-
-      // 7. Insertar la cita guardando el precio acordado en el momento de la reserva
-      const result = db.prepare(`
-        INSERT INTO appointments 
-        (client_id, barber_id, service_id, date, start_time, end_time, price_at_booking, status, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)
-      `).run(
-        targetClientId,
-        barber_id,
-        service_id,
-        date,
-        start_time,
-        endTime,
-        service.price,
-        notes || ''
-      );
-
-      return {
-        id: result.lastInsertRowid,
-        client_id: targetClientId,
-        barber_id: parseInt(barber_id),
-        barber_name: barber.name,
-        service_id: parseInt(service_id),
-        service_name: service.name,
-        date,
-        start_time,
-        end_time: endTime,
-        price_at_booking: service.price,
-        status: 'pendiente',
-        notes: notes || ''
-      };
-    });
-
-    const appointment = createBookingTransaction();
+    const appointment = createAppointment(db, req.user, req.body);
 
     res.status(201).json({
       message: 'Reserva creada con éxito.',

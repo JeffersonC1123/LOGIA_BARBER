@@ -1,0 +1,7 @@
+node_modules
+.git
+db/*.db
+db/*.db-*
+evidencias
+test
+Untitled-1.txt

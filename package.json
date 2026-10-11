@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node test/run-tests.js",
+    "test:unit": "node test/unit-tests.js",
     "seed": "node db/seed.js"
   },
   "keywords": [],
